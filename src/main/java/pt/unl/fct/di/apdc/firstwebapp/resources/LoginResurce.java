@@ -11,7 +11,6 @@ import javax.ws.rs.core.Response;
 
 import pt.unl.fct.di.apdc.firstwebapp.util.LoginData;
 
-
 @Path("/login")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
 public class LoginResurce {

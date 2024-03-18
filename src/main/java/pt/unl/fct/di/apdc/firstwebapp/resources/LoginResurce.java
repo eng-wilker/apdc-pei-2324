@@ -92,6 +92,7 @@ public class LoginResurce {
     @Path("/login2")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response doLogin2(LoginData data) {
+        LOG.fine("Login attempt by user: " + data.username);
         Key userKey = datastore.newKeyFactory().setKind("User").newKey(data.username);
         Entity user = datastore.get(userKey);
         if (user == null) {

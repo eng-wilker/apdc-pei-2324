@@ -1,7 +1,5 @@
+package pt.unl.fct.di.apdc.firstwebapp.resources;
 
-import java.security.Key;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.ws.rs.*;
@@ -12,19 +10,23 @@ import org.apache.commons.codec.digest.DigestUtils;
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Cookie;
-import javax.management.Query;
-import javax.swing.text.Position;
+import pt.unl.fct.di.apdc.firstwebapp.utils.LoginData;
+import pt.unl.fct.di.apdc.firstwebapp.utils.RegisterData;
+import pt.unl.fct.di.apdc.firstwebapp.Authentication.SignatureUtils;
+import pt.unl.fct.di.apdc.firstwebapp.utils.*;
+
+
 
 @Path("/login")
 @Produces(MediaType.APPLICATION_JSON + ";charset=utf-8")
-public class LoginResurce{
+public class LoginResource{
 
     public static final String SU = "SU";
     public static final String GA = "GA";
     public static final String GBO = "GBO";
     public static final String USER = "USER";
     private static final String key = "dhsjfhndkjvnjdsdjhfkjdsjfjhdskjhfkjsdhfhdkjhkfajkdkajfhdkmc";
-    private static final Logger LOG = Logger.getLogger(LoginResurces.class.getName());
+    private static final Logger LOG = Logger.getLogger(LoginResource.class.getName());
     private final static Datastore datastore = DatastoreOptions.getDefaultInstance().getService();
 
 public LoginResource() {
@@ -39,7 +41,10 @@ public LoginResource() {
             String id = UUID.randomUUID().toString();
             long currentTime = System.currentTimeMillis();
             long expirationTime = currentTime + 1000 * 60 * 60 * 2;
-            String fields = data.username + "." + id + "." + data.role + "." + currentTime + "." + expirationTime;
+            Key userKey = datastore.newKeyFactory().newKey(data.username);
+            Entity user = datastore.get(userKey);
+            String role = user.getString("role");
+            String fields = data.username + "." + id + "." + role + "." + currentTime + "." + expirationTime;
 
             String signature = SignatureUtils.calculateHMac(key, fields);
 
@@ -86,7 +91,8 @@ public LoginResource() {
         LOG.fine("Checking password for user " + data.username);
         Key userKey = datastore.newKeyFactory().newKey(data.username);
         Entity user = datastore.get(userKey);
-        if (user == null || !user.password.equals(DigestUtils.sha512Hex(data.password))) {
+        String password= user.getString("password");
+        if (user == null || !password.equals(DigestUtils.sha512Hex(data.password))) {
             return false;
         }
         return true;
@@ -173,7 +179,8 @@ public LoginResource() {
         try {
             Key userKey = datastore.newKeyFactory().newKey(data.username);
             Entity user = txn.get(userKey);
-            if (user == null || !user.password.equals(DigestUtils.sha512Hex(data.oldPassword))) {
+            String password= user.getString("password");
+            if (user == null || !password.equals(DigestUtils.sha512Hex(data.oldPassword))) {
                 txn.rollback();
                 return Response.status(Response.Status.FORBIDDEN).entity("Incorrect username or password.").build();
             }
@@ -206,7 +213,8 @@ public LoginResource() {
         try {
             Key userKey = datastore.newKeyFactory().newKey(data.username);
             Entity user = txn.get(userKey);
-            if (user == null || !user.password.equals(DigestUtils.sha512Hex(data.password))) {
+            String password= user.getString("password");
+            if (user == null || !   password.equals(DigestUtils.sha512Hex(data.password))) {
                 txn.rollback();
                 return Response.status(Response.Status.FORBIDDEN).entity("Incorrect username or password.").build();
             }
@@ -306,10 +314,6 @@ public LoginResource() {
                 return Response.status(Response.Status.BAD_REQUEST).entity("Invalid role.").build();
             }
             LOG.fine("Attempt to change role for user " + data.username);
-            if (user == null) {
-                txn.rollback();
-                return Response.status(Response.Status.NOT_FOUND).entity("User not found.").build();
-            }
             user = Entity.newBuilder(userKey).set("username", data.username).set("password", user.getString("password"))
                     .set("email", user.getString("email")).set("name", user.getString("name"))
                     .set("number", user.getString("number")).set("role", data.role).build();
@@ -345,10 +349,6 @@ public LoginResource() {
                 return Response.status(Response.Status.FORBIDDEN).entity("Insufficient permissions.").build();
             }
             LOG.fine("Attempt to change state for user " + data.username);
-            if (user == null) {
-                txn.rollback();
-                return Response.status(Response.Status.NOT_FOUND).entity("User not found.").build();
-            }
             user = Entity.newBuilder(userKey).set("username", data.username).set("password", user.getString("password"))
                     .set("email", user.getString("email")).set("name", user.getString("name"))
                     .set("number", user.getString("number")).set("role", user.getString("role"))

@@ -1,6 +1,5 @@
 package pt.unl.fct.di.apdc.firstwebapp.Authentication;
 
-
 import java.util.Base64;
 import java.util.logging.Logger;
 
@@ -38,6 +37,11 @@ public class SignatureUtils {
     public static String base64Enconder(byte[] str) {
         String encodedString = Base64.getEncoder().encodeToString(str);
         return encodedString;
+    }
+
+    public static boolean verifyHMac(String key, String data, String signature) {
+        String calculatedSignature = calculateHMac(key, data);
+        return calculatedSignature.equals(signature);
     }
 
 }
